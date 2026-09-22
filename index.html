@@ -257,6 +257,7 @@
     <button class="tab-btn" id="tabBtnCameras" role="tab" aria-selected="false" type="button">Live Cameras</button>
     <button class="tab-btn" id="tabBtnCFB" role="tab" aria-selected="false" type="button">College Football</button>
     <button class="tab-btn" id="tabBtnCFBNext" role="tab" aria-selected="false" type="button">Next Week</button>
+    <button class="tab-btn" id="tabBtnCalendar" role="tab" aria-selected="false" type="button">Calendar</button>
   </nav>
 
   <div id="tabDashboard" class="tab-panel">
@@ -593,6 +594,38 @@
 
   </div>
 
+  <div id="tabCalendar" class="tab-panel" style="display:none;">
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Google Calendar</h2>
+        <span class="meta">private to your browser</span>
+      </div>
+
+      <div class="cal-setup">
+        <input type="text" id="calIdInput" placeholder="your.email@gmail.com or calendar ID" aria-label="Google Calendar ID">
+        <button class="btn solid" id="calSave" type="button">Load calendar</button>
+        <button class="btn" id="calClear" type="button">Clear</button>
+      </div>
+
+      <div id="calEmbed" class="cal-embed-wrap" style="display:none;">
+        <iframe id="calFrame" style="border:0" frameborder="0" scrolling="no"></iframe>
+      </div>
+
+      <div class="cal-help">
+        <p><strong>Your calendar must be set to public for this to work</strong> — Google Calendar's embed feature can't show a private calendar just because you're logged in elsewhere on the page.</p>
+        <ol>
+          <li>In Google Calendar, go to <strong>Settings</strong> (gear icon) → click your calendar under "Settings for my calendars".</li>
+          <li>Under <strong>Access permissions</strong>, check <strong>"Make available to public"</strong>.</li>
+          <li>Scroll down to <strong>"Integrate calendar"</strong> and copy the <strong>Calendar ID</strong> — for most personal calendars this is just your Gmail address.</li>
+          <li>Paste that ID above and click <strong>Load calendar</strong>.</li>
+        </ol>
+        <p style="margin-top:10px;">The ID you enter is saved only in this browser (localStorage) — it isn't sent anywhere else by this page.</p>
+      </div>
+    </section>
+
+  </div>
+
 </div>
 
 <style>
@@ -629,6 +662,24 @@
     font-family: "Space Grotesk", sans-serif; font-size: 13px; font-weight: 600;
     color: var(--text); padding-bottom: 6px; border-bottom: 1px solid var(--hairline); margin-bottom: 2px;
   }
+
+  .cal-setup { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 18px; }
+  .cal-setup input {
+    flex: 1 1 260px; font: inherit; font-size: 13px; padding: 9px 11px;
+    background: var(--bg-raised); border: 1px solid var(--hairline); color: var(--text); border-radius: 6px;
+  }
+  .cal-setup input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .cal-embed-wrap { width: 100%; background: var(--bg-raised); border-radius: 8px; overflow: hidden; margin-bottom: 18px; }
+  .cal-embed-wrap iframe { width: 100%; height: 650px; display: block; }
+
+  .cal-help {
+    font-size: 13px; color: var(--text-dim); line-height: 1.6;
+    background: var(--bg-raised); border-radius: 8px; padding: 16px 18px;
+  }
+  .cal-help strong { color: var(--text); }
+  .cal-help ol { margin: 8px 0 0; padding-left: 20px; }
+  .cal-help li { margin-bottom: 4px; }
   .tab-btn {
     font-family: "Space Grotesk", sans-serif; font-size: 14px; font-weight: 500;
     background: none; border: none; color: var(--text-dim);
@@ -1543,34 +1594,80 @@
   if (state.lat === null) geolocate();
   // ---------- Tabs ----------
   function initTabs() {
-    var btnDash = $("tabBtnDashboard"), btnCam = $("tabBtnCameras"), btnCFB = $("tabBtnCFB"), btnCFBNext = $("tabBtnCFBNext");
-    var panelDash = $("tabDashboard"), panelCam = $("tabCameras"), panelCFB = $("tabCFB"), panelCFBNext = $("tabCFBNext");
-    var cfbLoaded = false, cfbNextLoaded = false;
+    var btnDash = $("tabBtnDashboard"), btnCam = $("tabBtnCameras"), btnCFB = $("tabBtnCFB"), btnCFBNext = $("tabBtnCFBNext"), btnCal = $("tabBtnCalendar");
+    var panelDash = $("tabDashboard"), panelCam = $("tabCameras"), panelCFB = $("tabCFB"), panelCFBNext = $("tabCFBNext"), panelCal = $("tabCalendar");
+    var cfbLoaded = false, cfbNextLoaded = false, calLoaded = false;
 
     function show(which) {
       panelDash.style.display = which === "dashboard" ? "" : "none";
       panelCam.style.display = which === "cameras" ? "" : "none";
       panelCFB.style.display = which === "cfb" ? "" : "none";
       panelCFBNext.style.display = which === "cfbnext" ? "" : "none";
+      panelCal.style.display = which === "calendar" ? "" : "none";
 
       btnDash.classList.toggle("active", which === "dashboard");
       btnCam.classList.toggle("active", which === "cameras");
       btnCFB.classList.toggle("active", which === "cfb");
       btnCFBNext.classList.toggle("active", which === "cfbnext");
+      btnCal.classList.toggle("active", which === "calendar");
 
       btnDash.setAttribute("aria-selected", which === "dashboard" ? "true" : "false");
       btnCam.setAttribute("aria-selected", which === "cameras" ? "true" : "false");
       btnCFB.setAttribute("aria-selected", which === "cfb" ? "true" : "false");
       btnCFBNext.setAttribute("aria-selected", which === "cfbnext" ? "true" : "false");
+      btnCal.setAttribute("aria-selected", which === "calendar" ? "true" : "false");
 
       if (which === "cfb" && !cfbLoaded) { cfbLoaded = true; initCFB(); }
       if (which === "cfbnext" && !cfbNextLoaded) { cfbNextLoaded = true; initCFBNext(); }
+      if (which === "calendar" && !calLoaded) { calLoaded = true; initCalendar(); }
     }
 
     btnDash.addEventListener("click", function () { show("dashboard"); });
     btnCam.addEventListener("click", function () { show("cameras"); });
     btnCFB.addEventListener("click", function () { show("cfb"); });
     btnCFBNext.addEventListener("click", function () { show("cfbnext"); });
+    btnCal.addEventListener("click", function () { show("calendar"); });
+  }
+
+  // ---------- Google Calendar ----------
+  function initCalendar() {
+    var STORAGE_KEY = "wd_gcal_id";
+    var input = $("calIdInput"), saveBtn = $("calSave"), clearBtn = $("calClear");
+    var embedWrap = $("calEmbed"), frame = $("calFrame");
+
+    function render(id) {
+      if (!id) {
+        embedWrap.style.display = "none";
+        frame.src = "";
+        return;
+      }
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
+      var url = "https://calendar.google.com/calendar/embed?src=" + encodeURIComponent(id) +
+        "&ctz=" + encodeURIComponent(tz);
+      frame.src = url;
+      embedWrap.style.display = "block";
+    }
+
+    var saved = "";
+    try { saved = localStorage.getItem(STORAGE_KEY) || ""; } catch (e) {}
+    if (saved) { input.value = saved; render(saved); }
+
+    saveBtn.addEventListener("click", function () {
+      var id = input.value.trim();
+      if (!id) return;
+      try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
+      render(id);
+    });
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); saveBtn.click(); }
+    });
+
+    clearBtn.addEventListener("click", function () {
+      input.value = "";
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+      render(null);
+    });
   }
 
   // ---------- College football scores (shared helpers) ----------
