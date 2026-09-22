@@ -603,7 +603,7 @@
       </div>
 
       <div class="cal-setup">
-        <input type="text" id="calIdInput" placeholder="your.email@gmail.com or calendar ID" aria-label="Google Calendar ID">
+        <input type="text" id="calIdInput" placeholder="your.email@gmail.com or calendar ID" value="h5g.shannon@gmail.com" aria-label="Google Calendar ID">
         <button class="btn solid" id="calSave" type="button">Load calendar</button>
         <button class="btn" id="calClear" type="button">Clear</button>
       </div>
@@ -1650,7 +1650,8 @@
 
     var saved = "";
     try { saved = localStorage.getItem(STORAGE_KEY) || ""; } catch (e) {}
-    if (saved) { input.value = saved; render(saved); }
+    var initial = saved || input.value.trim();
+    if (initial) { input.value = initial; render(initial); }
 
     saveBtn.addEventListener("click", function () {
       var id = input.value.trim();
